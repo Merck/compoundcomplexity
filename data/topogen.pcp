@@ -1,0 +1,17 @@
+{-q -k }
+
+{Only execute KW91 patterns if we are doing hydrophobic descriptors}
+modes HYDRO
+#include $MIXDAT/logP_KW91.pcp 
+modes INITIAL
+
+#include $MIXDAT/fixup_resonance_fcharges.pcp
+modes INITIAL
+
+#include $MIXDAT/fixup_tautomers_for_hash.pcp
+modes INITIAL
+
+* ? +;		{Remove all set properties}
+* ? sp3 ;	{Set all atoms sp3 by default, RPS kludge}
+
+#include $MIXDAT/atypes.pcp

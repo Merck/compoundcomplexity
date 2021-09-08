@@ -1,0 +1,112 @@
+<mdbedit:command-file xmlns:mdbedit="http://www.merck.com/" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.merck.com/">
+<mdbedit:command >
+<mdbedit:options>
+<!-- ************* The COMMON options below should be present in every command ************* -->
+<mdbedit:parameter cmdopt="-H|help"
+    type="flag"
+    default=""
+    comment="Display usage and quit"
+    keyword="HELP"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-header"
+    type="flag"
+    default="1"
+    comment="Print the header"
+    keyword="HEADER"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-command_file"
+    type="file_name"
+    default=""
+    comment="Take additional commands from a file"
+    keyword="COMMAND_FILE"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-list_options"
+    type="flag"
+    default=""
+    comment="List all options in effect"
+    keyword="LIST_OPTIONS"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-debug"
+    type="flag"
+    default="" 
+    comment="Print additional information to STDERR"
+    keyword="DEBUG"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-action"
+    type="combo"
+    choice="train|valid|predict"
+    default=""
+    comment="Choose one"
+    keyword="ACTION"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-trees"
+    type="int"
+    low="10"
+    default="100"
+    comment="Number of trees to generate in training"
+    keyword="TREES"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-mtry"
+    type="int"
+    low="1"
+    default=""
+    comment="Number of variables to pick to split on at each node"
+    keyword="MTRY"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-importance"
+    type="combo"
+    choice="0|1"
+    default="0"
+    comment="Calculate descriptor importance"
+    keyword="IMPORTANCE"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-w|descriptors"
+    type="string"
+    default="AP"
+    comment="Descriptors separated by comma"
+    keyword="DESCRIPTORS"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-pred_file"
+    type="file_name"
+    default=""
+    comment="The name of the file where the predictions will be written"
+    keyword="-PRED_FILE"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-R|resource"
+    type="string"
+    default="hpcluster"
+    comment="The PBS resource"
+    keyword="RESOURCE"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-q|queue"
+    type="string"
+    default="huge"
+    comment="The PBS queue"
+    keyword="QUEUE"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-by_tree_file"
+    type="file_name"
+    default="NO" 
+    comment="Create a file with predictions for each tree"
+    keyword="BY_TREE_FILE"
+    level="advanced"
+/>
+<!-- ************* Don't delete the lines below ************* -->
+</mdbedit:options>
+</mdbedit:command>
+</mdbedit:command-file>

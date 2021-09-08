@@ -1,0 +1,12 @@
+train_file          train.input         
+predict_file        tHePlAcEhOlDeR      
+molecules           2681                
+mdim                207                 
+tests               0                   
+trees               100                 
+ntree               2BeChAnGeD          
+random              1                   
+read                0                   
+delta               10                  
+mtry                69                  
+by_tree_file        NO                  

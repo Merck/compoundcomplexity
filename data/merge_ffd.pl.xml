@@ -1,0 +1,46 @@
+<mdbedit:command-file xmlns:mdbedit="http://www.merck.com/" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.merck.com/">
+<mdbedit:command >
+<mdbedit:options>
+<!-- ************* The COMMON options below should be present in every command ************* -->
+<mdbedit:parameter cmdopt="-H|help"
+    type="flag"
+    default=""
+    comment="Display usage and quit"
+    keyword="HELP"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-header"
+    type="flag"
+    default="1"
+    comment="Print the header"
+    keyword="HEADER"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-command_file"
+    type="file_name"
+    default=""
+    comment="Take additional commands from a file"
+    keyword="COMMAND_FILE"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-list_options"
+    type="flag"
+    default=""
+    comment="List all options in effect"
+    keyword="LIST_OPTIONS"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-debug"
+    type="flag"
+    default="" 
+    comment="Print additional information to STDERR"
+    keyword="DEBUG"
+    level="advanced"
+/>
+
+<!-- ************* Don't delete the lines below ************* -->
+</mdbedit:options>
+</mdbedit:command>
+</mdbedit:command-file>

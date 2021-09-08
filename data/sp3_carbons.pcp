@@ -1,0 +1,48 @@
+{ -k }
+{
+	ATOM TYPES FOR DOCK PROGRAM 6/93
+	1=cation, 2=anion, 3=donor, 4=acceptor, 5=polar, 6=hydrophobic, 7=none
+
+	Modified to accommodate SQW and ESEAL typing, use the mode -m SQ, 4/2006
+	Modified to accommodate TOPOGEN typing, use the mode -m ATYPE_TOPOGEN, 1/2008
+
+
+}
+
+      {Deuterium and Tritium}
+        |atomnum 151|                   ? D     $atomnum 1      ;
+        |atomnum 152|                   ? T     $atomnum 1      ;
+
+        {Other MACCS atom types can be included if they become a problem:
+        153 X
+        154 R
+        155,156,157,159 are defined too
+        171-196 Amino Acids}
+
+
+
+{General atom definition}
+!H,He,Ne,Ar,Xe,Kr,Rn	? g		; 
+
+He,Ne,Ar,Xe,Kr,Rn       ? dummyatom     ;
+
+Li,Ca,Mg,Fe,Zn,Co,Be,Mn,Mo,Na,As,Cu,Ba,Sn	? Me         ;
+
+g=g ? sp2!sp3 sp2!sp3 ;
+g=g=g ? * sp!sp2 * ;
+g#g ? sp!sp3 sp!sp3 ;
+g=g#g ? * sp!sp2 * ;
+g-10-g ? sp2!sp3 sp2!sp3 ;
+
+
+
+C&sp3 > sp3C;
+C&sp2 > sp2C;
+C&sp > spC;
+C&ar > arC;
+
+
+
+
+
+;;

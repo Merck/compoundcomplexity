@@ -1,0 +1,62 @@
+#!/bin/ksh
+set -o noglob
+#
+# 
+#
+USAGE="ligand_charge_pipe [options]
+Valid options are:
+   -c string Charge state NEUTRAL | ASIS | PH74
+   -H       Display usage and quit
+   -S       Use in stream mode
+======================================
+ligand_charge_pipe - $ARCH Version
+Program Release $Revision: 10.1 $
+Last Modified `ls -l $0 | awk '{print $6,$7,$8}'`"
+
+# 
+
+CHARGESTATE="PH74"
+
+  while getopts HSPRF:c: option
+  do
+      case $option in
+       H) echo "$USAGE"; exit 0;;
+       F) FORMAT="$OPTARG" ;;
+       P) CHARGE="PCP" ;;
+       R) RETYPE="1";;
+       S) STREAM="1";;
+       c) CHARGESTATE="$OPTARG";;
+       ?) echo "$USAGE"; exit 2;;     
+      esac
+  done                       
+ shift `expr $OPTIND - 1`
+#
+#
+
+case $CHARGESTATE in
+	NEUTRAL)  ;;
+	ASIS)  ;;
+        PH74) ;;
+	*) echo "Allowed values for -c are: NEUTRAL ASIS PH74" >&2 ;exit 2;;  
+esac
+
+
+
+if [ "$CHARGESTATE" = "NEUTRAL" ]; then
+ 	CHARGEPIPE="$MIXBIN/change fcharge '*:' 0 | $MIXBIN/pcp -f $MIXDAT/fixup_resonance_fcharges.pcp " 
+elif [ "$CHARGESTATE" = "PH74" ]; then
+ 	CHARGEPIPE="$MIXBIN/change fcharge '*:' 0 | $MIXBIN/pcp -f $MIXDAT/fixup_resonance_fcharges.pcp | $MIXBIN/pcp -f $MIXDAT/flog_def_fcharge.pcp | $MIXBIN/pcp -f $MIXDAT/flog_uncharge_termini.pcp -m CATION" 
+elif [ "$CHARGESTATE" = "ASIS" ]; then
+	CHARGEPIPE="cat"
+else
+	echo "Not set charge state" >&2
+fi
+#
+echo "CHARGEPIPE $CHARGEPIPE" >&2
+
+
+ eval $CHARGEPIPE
+#
+
+
+#

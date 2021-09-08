@@ -1,0 +1,51 @@
+{-q} {-k}
+{Default format charges : R. Sheridan Sept. 1994}
+
+
+{defining general atoms}
+{ note dummies must be allowed here as atoms, otherwise they might be added again}
+* ? g    ; 
+
+{hybridization definitions}
+g=g   ? sp2 sp2   ; 
+g-8-g ? sp2 sp2   ;
+g%g   ? sp2 sp2 ? ar ar  ;
+g-7-O,N,S-7-g  ? * sp3!sp2 *   ;
+g#g   ? sp1 sp1   ;
+g=g=g   ? * sp1!sp2 *   ;
+g!sp2,sp1   ? sp3    ;
+g-sp2,sp1   ? conj *   ;
+
+{debug 1}
+
+
+{Conjugated N}
+N&sp3-sp2,sp1 ? Nconj * ;
+N&sp3-7-sp2,sp1 ? Nconj * ;
+N&sp3(-sp2,sp1)-sp2,sp1 ? Ndconj * * ;
+N&sp3(-7-sp2,sp1)-7-sp2,sp1 ? Ndconj * * ;
+N&sp3!Nconj ? Nsat ;
+
+
+{resonant atom definition}
+N,O,S&conj	? res		;
+sp1,sp2         ? res           ;
+
+{aromatic ring definitions}
+res~res~res~res~res~res~@1	? ar6 ar6 ar6 ar6 ar6 ar6	;
+res~res~res~res~res~@1		? ar5 ar5 ar5 ar5 ar5		;
+
+{any flat ring}
+ar5,ar6			? ar		;
+
+
+{N termini}
+modes NEUTRAL
+N&X1&Nsat-C-C(=O)     $fcharge 0 * * * ; 
+N&X2&Nsat-C(-C-C-C-@1)-C(=O)     $fcharge 0 * * * * * * ; 
+
+modes CATION
+N&X1&Nsat-C-C(=O)     $fcharge 1 * * * ; 
+N&X2&Nsat-C(-C-C-C-@1)-C(=O)     $fcharge 1 * * * * * * ; 
+
+;;

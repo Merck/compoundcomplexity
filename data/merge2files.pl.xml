@@ -1,0 +1,126 @@
+<mdbedit:command-file xmlns:mdbedit="http://www.merck.com/" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.merck.com/">
+<mdbedit:command >
+<mdbedit:options>
+<!-- ************* The COMMON options below should be present in every command ************* -->
+<mdbedit:parameter cmdopt="-H|help"
+    type="flag"
+    default=""
+    comment="Display usage and quit"
+    keyword="HELP"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-header"
+    type="flag"
+    default="1"
+    comment="Print the header"
+    keyword="HEADER"
+    level="ignore"
+/>
+<mdbedit:parameter cmdopt="-command_file"
+    type="file_name"
+    default=""
+    comment="Take additional commands from a file"
+    keyword="COMMAND_FILE"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-list_options"
+    type="flag"
+    default=""
+    comment="List all options in effect"
+    keyword="LIST_OPTIONS"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-debug"
+    type="flag"
+    default="" 
+    comment="Print additional information to STDERR"
+    keyword="DEBUG"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-string"
+    type="string"
+    default=""
+    default_descr=""
+    comment="Specify string"
+    keyword="STRING"
+    level="common"
+/>
+
+<!-- BEGIN TEMPLATE: Section below (to END TEMPLATE) is a comment and can be kept in the file for reference
+<mdbedit:parameter cmdopt="-string(8)"
+    type="string"
+    default=""
+    default_descr=""
+    comment="Specify  string"
+    keyword="STRING"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-sl_mol(8)"
+    type="sl_mol"
+    default=""
+    default_descr=""
+    comment="Specify a molecule"
+    keyword="SL_MOL"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-sl_atom(8)"
+    type="sl_atom"
+    default=""
+    default_descr=""
+    comment="Specify atoms"
+    keyword="SL_ATOM"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-file_name(8)"
+    type="file_name"
+    default=""
+    default_descr=""
+    comment="This is a file"
+    keyword="FILE_NAME"
+    level="advanced"
+/>
+<mdbedit:parameter cmdopt="-int(11)"
+    type="int"
+    low="0"
+    high="100"
+    default=""
+    default_descr="Calculated"
+    comment="Integer number"
+    prerequisites=""
+    keyword="INT"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-float(11)"
+    type="float"
+    low="0.0"
+    high="100.0"
+    default="15.5"
+    default_descr=""
+    comment="Any number"
+    prerequisites=""
+    keyword="FLOAT"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-flag(7)"
+    type="flag"
+    default="" 
+    comment="Either on or off"
+    keyword="FLAG"
+    level="common"
+/>
+<mdbedit:parameter cmdopt="-combo(8)"
+    type="combo"
+    choice="one|two|three"
+    default="two"
+    comment="Choose one"
+    keyword="COUNT"
+    level="common"
+/> 
+
+END TEMPLATE -->
+<!-- ************* Don't delete the lines below ************* -->
+</mdbedit:options>
+</mdbedit:command>
+</mdbedit:command-file>

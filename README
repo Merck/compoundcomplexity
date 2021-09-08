@@ -1,0 +1,41 @@
+Compound Complexity Calculator
+
+USAGE: bin/compoundcomplexity.sh [ -sdf <sdfile> | -smi <smilefile> ]
+
+NOTES: This is an implementation of Compound Complexity for use in the 
+  SMART-PMI as described by Sherer et al. 
+  It contains derived training data as required by the described Random Forest
+  Model in order to replicate data presented in paper as well as applying to 
+  novel data.
+
+  Use of SDF input is strongly recommended.
+
+  Eq 1.
+          SMART-PMI = (0.13 × MW) + (177 × Complexity) - 252
+
+ABSTRACT: An important metric for gauging the impact a synthetic route has on
+  chemical resources, cost, and sustainability is process mass intensity
+  (PMI). Calculating the overall PMI or step PMI for a given synthesis from a
+  process description is more and more common across the industry. Our company
+  has established a strong track record of delivering on our Corporate
+  Sustainability goals, being recognized with seven EPA Green Chemistry
+  Challenge Awards in the last 15 years. While green chemistry principles help
+  in optimizing PMI and developing more sustainable processes, a key challenge
+  for the field is defining what ‘good’ looks like for any given molecule.
+  Predicting aspirational PMI for a synthetic target is not yet possible from
+  chemical structure alone. The only tool chemists have at their disposal to
+  predict PMI requires the synthetic route to be available, which is inherently
+  retrospective. We have developed SMART-PMI (in-Silico MSD Aspirational
+  Research Tool) to fill this glaring gap. Using only a 2D chemical structure,
+  which enables a measure of molecular complexity, we can generate a predicted
+  SMART-PMI using historical PMI data from our company’s clinical and
+  commercial portfolio of processes. From this SMART-PMI prediction, we have
+  established target ranges for Successful, World Class, and Aspirational PMI.
+  Using this model, chemists can develop powerful synthetic strategies that
+  make the biggest impact on PMI and, in turn, drive improvements to the model.
+  The potential of SMART-PMI to set industry-wide aspirational PMI targets is
+  discussed
+
+Requirements
+- MOE (http://www.chemcomp.com)
+- Perl 5.22.1+

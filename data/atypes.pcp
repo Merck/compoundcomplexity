@@ -1,0 +1,281 @@
+{-q -k }
+{
+	ATOM TYPES FOR DOCK PROGRAM 6/93
+	1=cation, 2=anion, 3=donor, 4=acceptor, 5=polar, 6=hydrophobic, 7=none
+
+	Modified to accommodate SQW and ESEAL typing, use the mode -m SQ, 4/2006
+	Modified to accommodate TOPOGEN typing, use the mode -m ATYPE_TOPOGEN, 1/2008
+
+
+}
+
+      {Deuterium and Tritium}
+        |atomnum 151|                   ? D     $atomnum 1      ;
+        |atomnum 152|                   ? T     $atomnum 1      ;
+
+        {Other MACCS atom types can be included if they become a problem:
+        153 X
+        154 R
+        155,156,157,159 are defined too
+        171-196 Amino Acids}
+
+
+
+{General atom definition}
+!H,He,Ne,Ar,Xe,Kr,Rn	? g		; 
+
+He,Ne,Ar,Xe,Kr,Rn       ? dummyatom     ;
+
+Li,Ca,Mg,Fe,Zn,Co,Be,Mn,Mo,Na,As,Cu,Ba,Sn	? Me         ;
+
+g=g ? sp2!sp3 sp2!sp3 ;
+g=g=g ? * sp!sp2 * ;
+g#g ? sp!sp3 sp!sp3 ;
+g=g#g ? * sp!sp2 * ;
+g-10-g ? sp2!sp3 sp2!sp3 ;
+
+
+
+
+
+{conjugated atom definition; any atom single bonded to sp2 or sp - cover symmetric case too}
+redundant
+g-sp2,sp		? conj *	;
+sp3-sp2,sp 		? conj * 	;
+sp2,sp,conj 		? resonant ;
+N,O,S&conj		? res		;	{resonant atom definition}
+sp,sp2			? res		;
+
+
+noredundant
+g&sp3(-sp2,sp)-sp2,sp   ? twoconj * *   ;
+
+{aromatic ring definitions}
+res~res~res~res~res~res~@1	? ar6 ar6 ar6 ar6 ar6 ar6	;
+res~res~res~res~res~@1		? ar5 ar5 ar5 ar5 ar5		;
+
+ar5,ar6			? ar		;	{any flat ring}
+N,O			? neg		; 	{electronegative atom}
+N,C,P,S=O,S		? withdraw *	;
+S,P&X4-O,S&X1		? withdraw *	;
+S&X3,X4-O,S&X1		? withdraw *	;
+C#N			? withdraw *	;
+N-withdraw		? namide *	;	{amide nitrogen}
+namide			? conj		;
+withdraw-N-withdraw	? * ndamide *	;
+C&sp2~withdraw		? camide *	;
+ar~sp2(~ar)~sp2(~ar)~ar	? * fused * fused * *	;
+g-O,S&X1		? * OT		;
+C(=O,S)-O,S&X1		? cx * *	;	{carboxylate carbon}
+F,Cl,Br,I		? hal		;
+
+ 
+
+{debug 1}
+
+{++++++++++++++++++++BEGIN ASSIGNMENTS+++++++++++++++++++++++++++++++++}
+
+*			> 0		;
+g			> 7		; {default}
+O			> 4		; {set O's to acceptors}
+N			> 3		; {set N's to donors}
+C,Si,S,Se,P,As		> 6		; {set to hydrophobic}
+hal&X1			> 6		; {halogens to hydrophobic}
+
+O&X1-g			> 5 *		; {hydroxide, this is overwritten later}
+
+
+{special nitrogen properties}
+
+N&X1&sp			> 4		; {cyano nitrogens are acceptors}
+N&X2&sp2		> 4		; {-N= are acceptors}
+N&X1&sp2		> 5		; {HN=X are polar (overwritten later by quanidinium)}
+
+{quaternary nitrogen, P, As and exceptions}
+
+N,P,As&X4&sp3		> 1		; {quaternary}
+
+	N,P,As&X4&sp3-O&X1	> 7 4		; {turns off quarternary N-oxides}
+	N,P,As&X4&sp3-S&X1	> 7 6		; {turns off quarternary N-sulfides}
+	N,P,As&X3,X4=O		> 7 4		; {alternative P-oxide}
+	N,P,As&X3,X4=S		> 7 6		; {alternative P-sulfides}
+
+
+{sp3 amines and exceptions}
+
+N&X1,X2,X3&sp3!conj	> 1		; {any nonconjugated sp3 N is a basic amine}
+N&X1,X2&sp3!conj-N&conj	> 3 *		; {except next to a conjugated N}
+N&X3&sp3!conj-N&conj	> 7 *		; 
+
+{conjugated N's}
+
+N&X1&sp3&conj		> 3		; {NH2-X= are donors}
+N&X2&sp3&conj		> 3		; {-NH-=  are donors}
+N&X3&sp3&conj		> 7		; {-N(-)-X= are planar}
+
+{these are special cases where conjugated sp3 N's are basic}
+
+	{amidine} 
+	C&X2&sp2!camide(=N&X1,X2!ar,conj)-N&sp3!ar,namide,twoconj	>  7 1 1	;
+	!N-C&X3&sp2!camide(=N&X1,X2!ar,conj)-N&sp3!ar,namide,twoconj	> * 7 1 1	; 
+
+	{guanidinium overwrites previous}
+	N&sp3!ar,namide-C!camide(=N&X1,X2!ar,conj)-N&sp3!ar,namide	> 1 7 1 1	;
+	N&sp3!namide-C(-N&sp3!namide)=N&X2!ar,namide	> 1 7 1 1	;
+
+
+
+{4-aminopyridine}
+N&sp3!ar,namide,twoconj-C&sp2~C&sp2~C&sp2~N&sp2&X2~C&sp2~C&sp2~@2	> * * * * 1 * *	; 
+
+{trisubstituted sp2 amines are cations with exceptions}
+N,P,As&X3,X4&sp2	> 1		;
+
+
+	N,P,As&X3&sp2-O&X1	> 7 4		; {turns off tertiary in nitro and N-oxides}  
+	N,P,As&X3&sp2-S&X1	> 7 6		; {turns off tertiary in N-sulfides}        
+	N&X3(=O)~O&X1		> 7 4 4		; {turns off tertiary N in alternative nitro}
+
+
+{di substituted sp amines and exceptions}
+N&X2&sp~!N&X1		> 1 *		; {diazonium not azide}
+N&X2&sp-O&X1		> 7 4		; {nitrile oxide}
+N&X2&sp#C&X1		> 7 4		; {isonitrile}
+N&X3&sp3-O&X1           > 7 5           ;
+
+{trisubstituted oxygens,sulfurs and exceptions}
+O,S&X3&sp3		> 1		; {trisubstituted}
+O,S&X2&sp2		> 1		; {trivalent}
+
+
+	S&X3,X4&sp3-O&X1	> 7 4		; {turns off sulfoxides} 
+	S&X3,X4&sp3-S&X1	> 7 6		; {turns off sulfoxides} 
+	S&X3,X4&sp2,sp=O	> 7 4		; {sulfoxides and sulfones}
+	S&X3,X4&sp2,sp=S	> 7 6		;
+
+
+{miscellaneous anions}
+S&X1-C&ar6			> 2 *		; {conjugated sulhydryls}
+P,As&X3,X4(=S&X1)		> 7 6		; {phosphate/arsenate monoanion and S equiv}
+
+
+	C&X3(=O,S)-O,S&X1			> 7 2 2		; {carboxylates and S equivalent}
+	P,As&X3,X4(~O,S&X1)~O,S&X1		> 7 2 2		; {phosphate/arsenate monoanion and S equiv}
+	P,As&X4(~O,S&X1)(~O,S&X1)~O,S&X1	> 7 2 2 2	; {phosphate/arsenate dianion and S equiv}
+	S,Se&X3(~O,S&X1)~O,S&X1			> 7 2 2		; {sulfite/selenite anion and S equivalent}
+	S,Se&X4(~O,S&X1)(~O,S&X1)~O,S&X1	> 7 2 2 2	; {sulfate/selenite anion and S equivalent}
+	C&X3&sp2(-O&X1)=N&X2-O-g=g~@1		> 7 2 2 4 * *	; {anion as in muscimol}
+	C&X3&sp2(=O&X1)-N&X2~O~g=g~@1		> 7 2 2 4 * *   ;
+	C&X3&sp2(-O&X1)-O-N&X2=sp2~sp2=@1	> 7 2 4 2 * *	; {anion as hydroxyisoxazole}
+	C&X3&sp2(=O&X1)-O-N&X2~sp2=sp2~@1	> 7 2 4 2 * *   ;
+	C=N&X2-N&X2=N&X2-N&X2-@1		> 6 2 2 2 2	; {tetrazole}
+	C=N&X2-N&X2-N&X2=N&X2-@1		> 6 2 2 2 2	; {tetrazole tautomer}
+
+
+{Miscellaneous tautomers and borderline ionizations}
+
+{diaminopyrimidine}
+N&X2&sp2~C&X3&sp2(-N&X1)~N&X2&sp2~C&X3&sp2(-N&X1)~g~g~@1	> 5 * 3 5 * 3 * *	;
+
+{make N's in imidazole equivalent}
+N&X2&sp3-C=N&X2-C&sp2~C&sp2-@1		> 5 * 5 * *	;
+
+{make N's in 1,2,3-triazole equivalent}
+N&X2&sp3-N&X2=N&X2-C&sp2~C&sp2-@1	> 5 5 5 * *	;
+N&X2-N&X2&sp3-N&X2=C&sp2~C&sp2=@1	> 5 5 5 * *	;
+
+{make N's in 1,2,4-triazole equivalent}
+N&X2&sp3-N&X2=C&sp2-N&X2=C&sp2-@1	> 5 5 * 5 *	;
+N&X2-N&X2=C&sp2-N&X2&sp3-C&sp2=@1	> 5 5 * 5 *	;
+
+{make N's in 1,2 pyrazole equivalent}
+N&X2-N&X2=C&sp2-C&sp2=C&sp2~@1	> 5 5 * * * ;
+
+{make N's in symmetrical 6-membered lactam equivalent}
+O=C-N&X2-C=N&X2-C=O		>  * * 5 * 5 * *	;
+
+O&X1-C&sp2!cx~sp2~C&sp2!cx=O		> 5 * * * 5	; {don't know which O is protonated}
+O&X1-C&ar6~ar6~C&ar6=O&X1		> 5 * * * 5	; {resonant oxygens}
+O&X1-C&ar6~ar6~ar6~ar6~C&ar6=O&X1	> 5 * * * * * 5	; {resonant oxygens}
+
+
+	ar-S&X4(~O,S&X1)(~O,S&X1)~N&X1,X2	> * 7 4 4 5		; {sulfonamide}
+	g-S&X4(~O,S&X1)(~O,S&X1)-N&X2-sp2,sp	> * 7 4 4 5 *		; {sulfonamide}
+	ar-S&X4(~O,S&X1)(~O,S&X1)-N&X2-sp2,sp	> * 7 2 2 2 *		; {sulfonamide}
+	ar-S&X4(~O,S&X1)(~O,S&X1)-N&X2~C~N&X1	> * 7 2 2 2 7 2		; {sulfonamide}
+
+
+
+	{over write 2-aminoimidazole}
+	N&X2&sp3-C(-N&sp3!ar,namide)=N&X2-C!fused,camide=C!fused,camide-@1	> 1 * 1 1 * *	;
+
+
+{special ionizations of adjacent keto/enols}
+O&X1-C&sp2!cx~C&sp2&X2,X3~C!cx(=O)-O,N-g	> 2 7 6 7 2 * *		;
+O=C&sp2!cx~C&sp2&X2,X3~C&sp2!cx(-O&X1)-O,N-g	> 2 7 6 7 2 * *		;
+O&X1-C&sp2~C&sp2-C(=O)-C&sp2~C&sp2-O&X1		> 2 7 * 7 2 * 7 2	;
+O&X1-C&sp2~C&sp2~C(-O&X1)~C&sp2-C=O		> 2 7 * 7 2 * 7 2	;
+
+{additional anions from Qiaolin Deng, some may overwrite keto/enols above Notebook 67621 pg.248 ACD prediction}
+{A}
+O&X1-C=C-C(=O)-C~C~C-@2		> 2 7 * 7 2 * "		;
+O&X1-C=C-C(=O)-C~C-@2		> 2 7 * 7 2 * "		;
+{B}
+O&X1-C=N-N(-g)-C(=O)-C-C-@2	> 2 7 2 * * 7 2 * "	;
+O&X1=C-N-N(-g)-C(=O)-C-C-@2	> 2 7 2 * * 7 2 * "	;
+
+{C}
+O&X1-C=C-C(=O)-C-C(=O)-@2	> 2 7 * 7 2 * 7 2	;
+{E}
+O&X1-C=C-C(=O)-N-C(=O)-@2	> 2 7 * 7 2 2 7 2	;
+{D}
+O&X1-C=C-C(=O)-O-C-@2		> 2 7 * 7 2 * *		;
+{H}
+O&X1-C-N(-g)-C(=O)-C=C-C=@2	> 2 7 * * 7 2 * "	;
+
+
+{from Alejandro Crespo}
+O,S-C(=O)-N&X2-C(=O)-g-@1  > * * * 2 * * * ;
+
+{miscellaneous fixups for "buried" atoms}
+C&X3&sp2~neg		> 7 *		; {a flat carbon atom surrounded by ge 1 neg atoms}
+C,S&X2&sp~neg		> 7 *		; {a sp carbon or sulfur atom surrounded by ge 1 neg atoms}
+g=N&X2=N&X1		> * 7 4		; {azide}
+S,P&X4~O,N&X1		> 7 *           ;
+P,As&X3,X4(=S&X1)(-!OT)(-!OT)-!OT	> 7 6 * * *	; {phosphate/arsenate double bonded to S}
+
+
+{aldehyde carbons should be 7}
+neg&X1=C&X2		> * 7		;
+
+{metal-bound atoms}
+Me			> 0		;
+N&sp2-Me		> 7 *		;
+N&conj-Me		> 7 *		;
+O&sp2-Me		> 7 *		;
+C(=O,S)-O,S&X1-Me	> * 4 4 *	;
+
+{monoatomic species}
+F,Cl,Br,I&X0		> 2		;
+O&X0			> 5		;
+
+{turn off this special case}
+N&sp3&X4-N-withdraw	> 7 4 *		;
+N,O,S=C-N&X2-N&sp3&X4 > * * 4 7 ; {aminimide}
+
+
+{divalent halogens}
+Cl,Br,I&sp3&X2		> 1		;
+
+
+modes CHIRALX
+
+| stereo R |   ? stereoR ;
+| stereo S |   ? stereoS ;
+
+C&stereoR > CHIRAL ;
+C&stereoS > CHIRAL ;
+
+
+
+;;

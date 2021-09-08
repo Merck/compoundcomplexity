@@ -1,0 +1,687 @@
+#!/bin/ksh  
+#
+
+#
+NDESCRIPTORS=50
+METHOD=parallelRF
+TOP=1000
+DESCRIPTOR="AP"
+INCLUDE_FILE=""
+EXCLUDE_FILE=""
+FFDFILE=""
+DATABASE="mcidb"
+OUTDIR=`pwd`
+NDESCRIPTORS=50
+RESOURCE="hpcluster"
+NTREE=100
+THREADS=1
+QUEUE="large"
+TREEPREDICTIONFILE=""
+TREEPREDICTIONOPTION=""
+CUTOFFS=""
+NO_RESCALE="0"
+PROBABILITY="0"
+SAVE=0
+
+##
+USAGE="Usage ${METHOD} [options] <keyword> <strings>
+Valid options are:
+   -c string	  transform predictions to categories with this cutoff e.g. 0,-99999,4_1,4,99999 {none}
+   -d string      Topobase or file to search (keyword search) {$DATABASE}
+   -E string      File containing list of molecules to exclude from search {none}
+   -n int         Trees to include {$NTREE}
+   -I filename    File containing list of molecules to include in search. 'sample' will use sample available list {none}
+   -N int 	  Number of top-scoring compounds to keep in search {$TOP}
+   -H             Display usage and quit
+   -p dirname     Directory into which to put output files { default: current working directory}
+   -P treepredfile File that contains predictions from individual trees {none}
+   -q string      Queue onto which to submit the jobs {$QUEUE}
+   -r             Do not rescale predictions {rescale based on self-fit}
+   -R string      Resource for submitting the jobs { $RESOURCE }
+   -S             Save intermediate files for debugging purposes
+   -T int	  Number of threads to run predictions on {$THREADS}
+   -w string      Descriptor e.g. AP,DP {AP}. Use with trend keyword
+Valid keywords are:
+   model predict search modelcheck predictcheck searchcheck PBcolor
+For model:
+    activityfile desfile problemname 
+For predict:
+   activityfile descriptorfile problemname (activityfile can be 'none'
+For PBcolor:
+    ffdfile problemname
+For search:
+   problemname 
+==================================================
+${METHOD} - $ARCH Version  
+Program Release $Revision: 10.39 $
+Last Modified `ls -l $0 | awk '{print $6,$7,$8}'`"
+
+
+
+  while getopts HBS6rxflWw:d:N:E:I:c:p:h:R:n:T:q:P:2: option
+  do
+      case $option in
+       H) echo "$USAGE"; 
+	  exit 0;;
+       N) TOP=$OPTARG;;
+       d) DATABASE=$OPTARG;;
+       E) EXCLUDE_FILE=$OPTARG;;
+       I) INCLUDE_FILE=$OPTARG;;
+       S) SAVE="1";;
+       w) DESCRIPTOR=$OPTARG;;
+       p) OUTDIR=$OPTARG;;
+       c) CUTOFFS=$OPTARG;;
+       n) NTREE=$OPTARG;;
+       q) QUEUE="$OPTARG";;
+       R) RESOURCE="$OPTARG";;
+       T) THREADS="$OPTARG";;
+       r) NO_RESCALE="1";;
+       6) PROBABILITY="1";;
+       P) TREEPREDICTIONFILE=$OPTARG; TREEPREDICTIONOPTION=" -by_tree_file $TREEPREDICTIONFILE";;
+       ?) echo "$USAGE"
+          exit 2;;     
+      esac
+  done                       
+ shift `expr $OPTIND - 1`
+
+
+KEYWORD=$1
+
+#<<<<<<< parallelRF_new.sh
+#. $MIXSC/setintel.ksh ""
+# . $MIXSC/setintel.ksh ""
+#>>>>>>> 10.35
+
+export RESOURCE=$RESOURCE
+
+if [ "$KEYWORD" = "model" -o "$KEYWORD" = "modelcheck" ]; then
+    ACTIVITYFILE=$2
+    DESFILE=$3
+    PROBNAME=$4
+
+
+
+    if [ "$PROBNAME" = "" ];then
+	echo "You need to enter a problemname" >&2
+	exit
+    fi
+#
+#	change requested descriptor to upper case
+      DESCRIPTOR=`echo $DESCRIPTOR | \
+      sed 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/'`
+#
+#   check for presence of activity file 
+    if [ ! -r $ACTIVITYFILE ] ; then
+	echo "Activityfile $ACTIVITYFILE is missing or unreadable...bye" >&2
+	exit
+    fi
+#   check for types of activities
+    echo "Checking suitability of activities..." >&2
+    TEST=`cat $ACTIVITYFILE | $MIXSC/activity_status.pl | grep 'numerical=yes' `
+    if [ "$TEST" = "" ]; then
+	echo "$TEST" >&2
+	echo "The activities are not suitable for ${METHOD}...stop" >&2
+	exit
+    fi
+    echo "Checking binary..." >&2
+    TEST=`cat $ACTIVITYFILE | $MIXSC/activity_status.pl | grep 'binary=yes' `
+#    echo "TEST ^$TEST^ FORCE ^$FORCEBINARYPREDICTION^" >&2
+    if [ "$TEST" != "" ]; then
+	print "BINARY MODEL" >&2
+	BINARY=1
+    else
+	print "REGRESSION MODEL" >&2
+	BINARY=0
+    fi
+#
+#	NACTIVITIES=`wc $ACTIVITYFILE | awk '{print $1}'`
+#	if [ $NACTIVITIES -gt 50000 ]; then
+#		QUEUE="huge"
+#		echo "Queue set to huge because $NACTIVITIES activities..." >&2
+#	else
+#		echo "Queue kept at $QUEUE because $NACTIVITIES activities..." >&2
+#	fi
+#
+#   test for descriptor file	
+    if [ ! -r $DESFILE ] ; then
+	echo "Descriptorfile $DESFILE is missing or unreadable...stop" >&2
+        exit
+    fi
+#   test for the presence and suitability of descriptors
+    echo "Checking suitability of descriptors..." >&2
+    TEST=`cat $DESFILE | $MIXSC/descriptor_checking.pl -w $DESCRIPTOR | grep  missing`
+    if [ "$TEST" != "" ]; then
+	echo "$TEST" >&2
+	echo "Some requested descriptors are missing or invalid for ${METHOD}" >&2
+	exit
+    fi    
+
+#
+    if [ "$KEYWORD" = "modelcheck" ]; then	
+	echo "Activities and descriptors are ok for model!" >&2
+        exit;
+    fi
+#
+#   if the size of the dataset > 100,000 change the queue to huge
+    echo "Testing to see if the size is so large we need to bump up the queue..." >&2
+    TEST=`wc $ACTIVITYFILE | awk '{print $1}'`
+    if [ $TEST -gt 75000 ]; then
+	echo "More than 75000 molecules...changing queue to 'huge'" >&2
+	QUEUE="huge"
+    fi
+
+    echo "Removing any old versions of the model..." >&2
+	rm -R -f $OUTDIR/$PROBNAME.${METHOD}_model
+    echo "Generating the model..." >&2
+
+     if [ "$BINARY" = 0 ]; then
+
+		echo "Regression model..." >&2
+
+	     $MIXSC/parallelRF.pl -w $DESCRIPTOR -q $QUEUE -R $RESOURCE -tree $NTREE model  $ACTIVITYFILE $DESFILE $OUTDIR/$PROBNAME.${METHOD}_model  
+  	
+	
+	     echo "Doing the self-fit..." >&2
+
+             $MIXSC/parallelRF.pl self-fit  $ACTIVITYFILE $DESFILE $OUTDIR/$PROBNAME.${METHOD}_model  
+
+#
+             cat $OUTDIR/${PROBNAME}.${METHOD}_model/train.input.act | awk '{print "M",$1,$2}' | $MIXSC/predicted_observed_correlation.pl 2>/dev/null > $OUTDIR/$PROBNAME.${METHOD}_stats
+#
+        	B1=`cat $OUTDIR/${PROBNAME}.${METHOD}_stats | $MIXSC/get_value_from_file.pl B1`
+	        B0=`cat $OUTDIR/${PROBNAME}.${METHOD}_stats | $MIXSC/get_value_from_file.pl B0`
+	      if [ "$B1" = "" -o "$B0" = "" ]; then
+		   B1="1.0"
+		  B0="0.0"
+	      fi
+
+       else
+
+		echo "Binary model..." >&2
+
+		echo "Generating ARFF file for binary OUTDIR=$OUTDIR..." >&2
+
+#		Generate ARFF file
+		$MIXSC/generate_arff.pl -w $DESCRIPTOR -arff_file $OUTDIR/$PROBNAME.${METHOD}_model/train_input.arff -mol_list_file $OUTDIR/$PROBNAME.${METHOD}_model/train.mol_list  model $ACTIVITYFILE $DESFILE $OUTDIR/$PROBNAME.${METHOD}_model
+
+#		Generating model + descriptor importances
+
+		echo "Generating TREES for binary..." >&2
+
+#		Use the parallelized version
+
+#		~sheridar/mix/trendvector/parf_tree_trial.ksh -R $RESOURCE -n $NTREE -w $OUTDIR/$PROBNAME.${METHOD}_model/TREES $OUTDIR/$PROBNAME.${METHOD}_model/train_input.arff 
+		$MIXSC/parf_tree.ksh -q $QUEUE -R $RESOURCE -n $NTREE -w $OUTDIR/$PROBNAME.${METHOD}_model/TREES $OUTDIR/$PROBNAME.${METHOD}_model/train_input.arff 
+
+		ls -l $OUTDIR/$PROBNAME.${METHOD}_model/TREES >&2
+
+#		Doing the self-fit
+
+		echo "Doing the self-fit..." >&2
+
+                $MIXBIN/parf -a $OUTDIR/$PROBNAME.${METHOD}_model/train_input.arff -fl $OUTDIR/$PROBNAME.${METHOD}_model/TREES/Tree  -av $MIXTMP/PARFprediction.$$
+	
+		ls -l $MIXTMP/PARFprediction.$$ >&2
+
+        	paste $OUTDIR/$PROBNAME.${METHOD}_model/train.mol_list $MIXTMP/PARFprediction.$$ | awk '{print $1,$5/($4+$5),$2}' | sed 's/ YES/ 1/' | sed 's/ NO/ 0/' | $MIXSC/predicted_observed_correlation.pl 2>/dev/null > $OUTDIR/$PROBNAME.${METHOD}_stats
+
+
+        	B1=`cat $OUTDIR/${PROBNAME}.${METHOD}_stats | $MIXSC/get_value_from_file.pl B1`
+	        B0=`cat $OUTDIR/${PROBNAME}.${METHOD}_stats | $MIXSC/get_value_from_file.pl B0`
+	      if [ "$B1" = "" -o "$B0" = "" ]; then
+		   B1="1.0"
+		   B0="0.0"
+	      fi
+
+
+       fi  # end binary
+#
+      ls -ld $OUTDIR/${PROBNAME}.${METHOD}_model
+      ls -l $OUTDIR/${PROBNAME}.${METHOD}_stats
+      cat  $OUTDIR/${PROBNAME}.${METHOD}_stats >&2
+
+#	Add model info to directory
+	echo "Adding model information to the model directory..." >&2
+
+	echo "DESCRIPTOR $DESCRIPTOR" > $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+        echo "ACTIVITYFILE $ACTIVITYFILE" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+        echo "DESFILE $DESFILE" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+	echo "RESCALING B1 $B1 B0 $B0" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+	echo "CUTOFFS $CUTOFFS" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+	echo "BINARY $BINARY" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+	echo "PROBABILITY $PROBABILITY" >> $OUTDIR/$PROBNAME.${METHOD}_model/MODEL_INFO
+
+#	Change permissions so all files are readable
+	chmod -R 755 $OUTDIR/$PROBNAME.${METHOD}_model
+
+         if [ "$SAVE" = "0" ]; then
+		rm -f $MIXTMP/*.$$
+		rm -f $OUTDIR/$PROBNAME.${METHOD}_model/train.input*
+		rm -f $OUTDIR/$PROBNAME.${METHOD}_model/train.mol_list		
+	 fi
+
+#
+#############################################################################################
+elif [ "$KEYWORD" = "inspect" ] ; then
+
+
+
+	PROBNAME=$2
+	BINARY=`grep ^BINARY $OUTDIR/${PROBNAME}.${METHOD}_model/MODEL_INFO | awk '{print $2}'` 
+        DESCRIPTOR=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^DESCRIPTOR " | awk '{print $2}'`
+	PROBBASE=`basename $PROBNAME `
+
+	echo "PROBNAME $PROBNAME" >&2
+	echo "PROBBASE $PROBBASE" >&2
+	echo "DESCRIPTOR $DESCRIPTOR" >&2
+	echo "BINARY $BINARY" >&2
+
+
+	if [ "$BINARY" = "1" ]; then
+		echo "The 'inspect' keyword is not valid for parallelRF binary" >&2
+
+#       		echo "DESCRIPTOR $DESCRIPTOR" >  $OUTDIR/${PROBBASE}.${METHOD}_int
+#        	HALF=`echo $NDESCRIPTORS | awk '{print int($1/2)}'`
+ 
+
+#                cat $OUTDIR/${PROBBASE}.${METHOD}_int >&2
+#                ls -l  $OUTDIR/${PROBBASE}.${METHOD}_int >&2
+
+	else
+		echo "The 'inspect' keyword is not valid for parallelRF regression" >&2
+	fi
+
+#############################################################################################
+elif [ "$KEYWORD" = "color" -o "$KEYWORD" = "DIBcolor" -o "$KEYWORD" = "PBcolor" ] ; then
+	FFDFILE=$2
+	PROBNAME=$3
+
+
+#
+     if [ ! -r $FFDFILE  ]; then
+	echo "Connection table file $FFDFILE is missing or unreadable...bye" >&2
+	exit
+     fi
+     if [ "$PROBNAME" = "" ] ; then
+	   echo "You need to specify a problem name...bye" >&2
+	   exit
+     fi
+     if [ ! -r ${PROBNAME}.${METHOD}_model ]; then
+		echo "Could not find the file ${PROBNAME}.${METHOD}_model "
+		exit
+     fi
+#
+#
+#	FFDBASE=`basename $FFDFILE | cut -d'.' -f1` 
+	FFDBASE=`basename $FFDFILE | sed -e 's/\.[^.]*$//' ` 
+
+	PROBBASE=`basename $PROBNAME `
+
+	echo "FFDBASE $FFDBASE PROBNAME $PROBNAME PROBBASE $PROBBASE" >&2
+#
+	if [ "$KEYWORD" = "PBcolor" ]; then
+		cat $FFDFILE | $MIXSC/generate_colors_by_prediction_pipe ${PROBNAME}.${METHOD}_model > $OUTDIR/${FFDBASE}_${PROBBASE}.${METHOD}_${KEYWORD}
+	else
+       		echo "DESCRIPTOR $DESCRIPTOR" >  $MIXTMP/${METHOD}sort.$$
+        	tail -n +2 $OUTDIR/${PROBNAME}.${METHOD}_model/descriptor_importances >> $MIXTMP/${METHOD}sort.$$
+		cat $FFDFILE | $MIXSC/generate_colors_by_vector_pipe -v list $MIXTMP/${METHOD}sort.$$  > $OUTDIR/${FFDBASE}_${PROBBASE}.${METHOD}_${KEYWORD}
+	fi
+
+
+	ls -l  $OUTDIR/${FFDBASE}_${PROBBASE}.${METHOD}_${KEYWORD}                                       
+         if [ "$SAVE" = 0]; then
+		rm -f $MIXTMP/*.$$
+	 fi
+
+    echo "End of model building..." >&2
+#
+##############################################################################################
+elif [ "$KEYWORD" = "predict" -o "$KEYWORD" = "predictcheck" ] ; then
+
+
+        ACTIVITYFILE=$2
+	DESFILE=$3
+	PROBNAME=$4
+
+
+#
+        if [ ! -r $ACTIVITYFILE ] ; then
+	  echo "Activityfile $ACTIVITYFILE is missing or unreadable...continue"
+        fi
+        if [ "$PROBNAME" = "" ] ; then
+	   echo "You need to specify a problem name...bye" >&2
+	   exit
+        fi
+
+#   test for descriptor file	
+    if [ ! -r $DESFILE ] ; then
+	echo "Descriptorfile $DESFILE is missing or unreadable...stop" >&2
+        exit
+    fi
+#
+# test for the presence of the model
+     TREES=`ls -l ${PROBNAME}.${METHOD}_model/TREES/*.tree ${PROBNAME}.${METHOD}_model/TREES/TREE.* | wc | awk '{print $1}'`
+	echo "TREES in ${PROBNAME}.${METHOD}_model/TREES" >&2
+     if [ $TREES -lt 10 ]; then
+		echo "Could not find trees in ${PROBNAME}.${METHOD}_model " >&2
+		exit
+     fi
+
+#   test for the presence and suitability of descriptors
+      DESCRIPTOR=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^DESCRIPTOR " | awk '{print $2}'`
+	echo "DESCRIPTOR in model $DESCRIPTOR" >&2
+
+	BINARY=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^BINARY " | awk '{print $2}'`
+	PROBABILITY=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^PROBABILITY " | awk '{print $2}'`
+	if [ "$BINARY" = "" ]; then
+		BINARY=0
+	fi
+	if [ "$PROBABILITY" = "" ]; then
+	       PROBABILITY=0
+	fi
+
+
+
+	B1=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^RESCALING " | awk '{print $3}'`
+	B0=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^RESCALING " | awk '{print $5}'`
+	if [ "$BINARY" = 1 ]; then
+#		Probabilities need to be converted to range 0-1 from range 1-100
+		if [ "$B1" = "" -o "$B1" = "NA" ]; then	
+			B1="0.01"
+		fi
+		if [ "$B0" = "" -o "$B0" = "NA" ]; then	
+			B0="0.0"
+		fi
+		if [ "$NO_RESCALE" = "1" ]; then
+			echo "Turning off scaling...." >&2
+			B1=0.01
+			B0=0.0
+		fi
+	else
+#		Regressions need to be on their current scale.
+		if [ "$B1" = "" -o "$B1" = "NA" ]; then	
+			B1="1.0"
+		fi
+		if [ "$B0" = "" -o "$B0" = "NA" ]; then	
+			B0="0.0"
+		fi
+		if [ "$NO_RESCALE" = "1" ]; then
+			echo "Turning off scaling...." >&2
+			B1=1.0
+			B0=0.0
+		fi
+
+	fi
+
+	echo "RESCALING B1 $B1 B0 $B0" >&2
+
+
+#exit
+
+    echo "Testing $DESFILE for the descriptor $DESCRIPTOR..." >&2
+    TEST=`cat $DESFILE | $MIXSC/descriptor_checking.pl -w $DESCRIPTOR | grep  missing`
+    if [ "$TEST" != "" ]; then
+	echo "$TEST" >&2
+	echo "The descriptors are not in $DESFILE...stop" >&2
+	exit
+    fi
+#
+    if [ "$KEYWORD" = "predictcheck" ]; then	
+	echo "Activities and descriptors are ok for prediction!" >&2
+        exit;
+    fi
+
+       BASE=`basename $DESFILE | sed 's/\.des//'`
+       DESBASE=`basename $DESFILE`
+       PROBBASE=`basename $PROBNAME`
+#
+	export OMP_NUM_THREADS=$THREADS
+
+	echo "TREEPREDICTIONOPTION $TREEPREDICTIONOPTION" >&2
+
+
+if [ "$BINARY" = "1" ]; then
+# This section for binary 
+# Generating the ARFF files
+
+	if [ "$PROBABILITY" = "1" ]; then
+		BINPIPE="$MIXSC/bin_pred_obs.pl"
+	else
+		BINPIPE="$MIXSC/bin_pred_obs.pl -p '0,-999,0.5 1,0.5,9999'"
+	fi
+
+# actually don't need DESCRIPTOR in this statement, because it is take from $OUTDIR/${PROBNAME}.${METHOD}_model/MODEL_INFO
+       $MIXSC/generate_arff.pl -w $DESCRIPTOR -arff_file $MIXTMP/PARFarff.$$ -mol_list_file $MIXTMP/PARFmollist.$$ predict $ACTIVITYFILE $DESFILE ${PROBNAME}.${METHOD}_model
+
+
+       $MIXBIN/parf -a $MIXTMP/PARFarff.$$  -fl ${PROBNAME}.${METHOD}_model/TREES/Tree -av $MIXTMP/PARFprediction.$$
+
+	if [ "$TREEPREDICTIONFILE" != "" ]; then
+		paste $MIXTMP/PARFmollist.$$ $MIXTMP/PARFprediction.$$ |  awk '{printf "%s",$1; i=0; while (i<$4){printf " 0"; i++}; i=0; while (i<$5){printf " 1"; i++}; printf "\n"}' > $TREEPREDICTIONFILE
+	fi     
+
+      (echo "MOLECULE PREDICTED OBSERVED" ; paste $MIXTMP/PARFmollist.$$ $MIXTMP/PARFprediction.$$ | awk '{print $1,b1*$5/($4+$5)+b0,"0"}'  b1=$B1 b0=$B0 | eval $BINPIPE | awk '{print $1,$2}' ) | grep -v OBSERVED > $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions
+
+       if [ "$ACTIVITYFILE" != "none" ]; then
+ 
+		echo "MOLECULE PREDICTED OBSERVED" > $MIXTMP/temp.$$
+       		big_flat_file.pl $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions $MIXTMP/PARFmollist.$$ | grep -v ' --' | sed 's/ YES/ 1/' | sed 's/ NO/ 0/' >> $MIXTMP/temp.$$
+       		mv $MIXTMP/temp.$$  $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions
+
+	       cat $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions | $MIXSC/predicted_observed_correlation.pl 2>/dev/null > $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats	
+
+       		ls -l  $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats
+
+	       cat $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats >&2
+
+       fi
+       
+
+else
+#This section for regression
+
+
+#	Can't use mixrun because the things set by $MIXSC/random_forest/setintel.ksh do not go over to other machine.
+     $MIXSC/parallelRF.pl $TREEPREDICTIONOPTION -pred_file $MIXTMP/pred.$$ predict $ACTIVITYFILE $DESFILE ${PROBNAME}.${METHOD}_model
+
+
+#   To catch zero predictions
+#   If the predictions come back all identical redo
+       SDPRED=`cat $MIXTMP/pred.$$ | grep -v Mol_name | mean.pl 2 | awk '{print $8}'`
+        if [ $SDPRED -lt 0.001 ]; then
+                echo "%%%Redoing the predictions%%%\n" >&2
+	     $MIXSC/parallelRF.pl $TREEPREDICTIONOPTION -pred_file $MIXTMP/pred.$$ predict $ACTIVITYFILE $DESFILE ${PROBNAME}.${METHOD}_model
+
+        fi
+
+
+#	if there is a CUTOFF coming in as an option, use that, otherwise check for it in MODEL_INFO
+	if [ "$CUTOFFS" = "" ]; then
+		CUTOFFS=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep "^CUTOFFS " | awk '{print $3}'`
+	fi
+	if [ "$CUTOFFS" = "" ]; then
+		BINPIPE="cat"
+	else
+		BINPIPE="$MIXSC/bin_pred_obs.pl -p $CUTOFFS -o $CUTOFFS"
+	fi
+
+    echo "MOLECULE PREDICTED OBSERVED" > $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions
+    cat $MIXTMP/pred.$$ | awk '{print $1,$2*b1+b0,$3}' b1=$B1 b0=$B0 | grep -v Mol_name | eval $BINPIPE >> $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions
+
+
+	ls -l $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions
+
+
+    if [ "$TREEPREDICTIONFILE" != "" ]; then
+                echo "Producing individual tree predictions..." >&2
+                ls -l $TREEPREDICTIONFILE
+    fi
+#
+    if [ "$ACTIVITYFILE" != "none" ]; then 
+        cat  $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_predictions | \
+        $MIXSC/predicted_observed_correlation.pl -e '-999' 2>/dev/null > $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats
+	ls -l $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats
+        cat $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_stats >&2
+#
+    fi
+
+
+#################################################################
+  fi # end of regression section
+
+    if [ "$SAVE" = "0" ]; then    
+		rm -f $MIXTMP/*.$$
+    fi
+    echo "End of prediction..." >&2
+
+#
+##############################################################################################
+elif [ "$KEYWORD" = "search" -o "$KEYWORD" = "searchcheck" ] ; then
+
+#	echo "Search keyword does not work yet.." >&2
+#	exit
+
+#	The problem is that call_parallel_qsar_search wants to push the model file.
+
+	PROBNAME=$2
+
+
+
+        PROBBASE=`basename $PROBNAME `
+	if [ ! -r ${PROBNAME}.${METHOD}_model ]; then
+		echo "Could not open the file ${PROBNAME}.${METHOD}_model ...spelling?" >&2
+		exit
+	fi
+
+	DESCRIPTOR=`cat $PROBNAME.${METHOD}_model/MODEL_INFO | grep ^DESCRIPTOR | awk '{print $2}'`
+#       echo "DESCRIPTOR $DESCRIPTOR " >&2
+        if [ "$DESCRIPTOR" = ""  ]; then
+		echo "Null DESCRIPTOR...stopping" >&2
+		exit
+        fi
+#
+	INCLUDE_FILE=`$MIXSC/look_for_list -d $DATABASE -N $PROBNAME.sqldbfile_include " $INCLUDE_FILE"`
+	EXCLUDE_FILE=`$MIXSC/look_for_list -d $DATABASE -N $PROBNAME.sqldbfile_exclude " $EXCLUDE_FILE"`
+	if [ "$INCLUDE_FILE" = "EXIT" ]; then
+		echo "Invalid inclusionfile!" >&2
+		exit
+	fi
+	if [ "$EXCLUDE_FILE" = "EXIT" ]; then
+		echo "Invalid exclusionfile!" >&2
+		exit
+	fi
+
+#
+	PIPE="$MIXSC/regno_gate.pl all"
+	if [ "$INCLUDE_FILE" != "" -a "$EXCLUDE_FILE" = "" ]; then
+		PIPE="$MIXSC/regno_gate.pl -d -i $INCLUDE_FILE"
+	fi
+	if [ "$INCLUDE_FILE" = "" -a "$EXCLUDE_FILE" != "" ]; then
+		PIPE="$MIXSC/regno_gate.pl -d -i -E $EXCLUDE_FILE"
+	fi
+	if [ "$INCLUDE_FILE" != "" -a "$EXCLUDE_FILE" != "" ]; then
+		PIPE="$MIXSC/regno_gate.pl -d -i $INCLUDE_FILE $EXCLUDE_FILE"
+	fi
+	echo "PIPE $PIPE" >&2
+#	exit
+#
+	print "\nChecking for database $DATABASE ..." >&2
+#
+	 if [ "`sqldb -S ${DATABASE}.topobase -k`" != "" ]; then           echo "This is a topobase!" >&2
+                BASE=$DATABASE
+       		TEST=`sqldb -f -S ${DATABASE}.topobase -bin_size 20 -bin_number 1  | $MIXSC/descriptor_checking.pl -w $DESCRIPTOR | grep missing`                
+		echo "TEST $TEST" >&2
+               if [ "$TEST" != "" ]; then
+                      echo "$TEST" >&2
+		      echo "The descriptors $DESCRIPTOR required by $PROBNAME.${METHOD}_model are not in $DATABASE...stop" >&2
+                      exit
+                fi 
+                if [ "$KEYWORD" = "searchcheck" ];then
+                        echo "The descriptors are ok for searching!" >&2
+                        exit
+                fi
+#
+#		preparing the big list, perhaps filtered
+		sqldb -S ${DATABASE}.topobase -l | $PIPE > $LTMP/${METHOD}_search_list_$$
+#		echo PIPE "$PIPE" >&2
+#		echo EXCLUDEFILE "$EXCLUDE_FILE" >&2
+		echo "List file..." >&2
+		wc $LTMP/${METHOD}_search_list_$$ >&2
+	
+
+#
+#		delete any old results with the same name
+		rm -f $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_search
+##
+#		This part calls the parallel prediction
+	#	METHOD="${METHOD}"
+		NPERCPU=5000
+		export RESOURCE=$RESOURCE
+	        #modelfile to predict with
+		#list of files to be searched
+		#file to contain the results
+		# the method
+		# the topobase to be searched
+		# the number of molecules per job, ok if left blank
+		# Any options for prediction
+		call_parallel_qsar_search $PROBNAME.${METHOD}_model $LTMP/${METHOD}_search_list_$$ $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_search $METHOD $DATABASE.topobase "$NPERCPU" ""
+		
+
+
+#
+
+       elif [ -r $DATABASE ]; then
+                echo "This is a file!" >&2
+                PHYSSTRIPE=$DATABASE
+                BASE=`basename $DATABASE`
+                TEST=`cat $DATABASE | $MIXSC/descriptor_checking.pl -w $DESCRIPTOR | grep  missing`
+                if [ "$TEST" != "" ]; then
+                      echo "$TEST" >&2
+                      echo "The descriptors required by $PROBNAME.${METHOD}_model are not in $DATABASE...stop" >&2
+                      exit
+                fi 
+                if [ "$KEYWORD" = "searchcheck" ];then
+                        echo "The descriptors are ok for searching!" >&2
+                        exit
+                fi
+#
+#		delete any old results with the same name
+		rm -f $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_search
+#
+                echo "\nStarting the search...this could take a while" >$2
+		cat $DATABASE | perlegrep.pl ^MOLECULE | awk '{print $2}' | $PIPE >  $LTMP/${METHOD}_search_list_$$
+		cat $DATABASE | $MIXSC/molecule_gate.pl $LTMP/${METHOD}_search_list_$$ > $LTMP/${METHOD}_search_des_$$
+  		
+                $MIXSC/${METHOD}_new predict none $LTMP/${METHOD}_search_des_$$ $PROBNAME 
+                mv $LTMP/${METHOD}_search_des_$$_${PROBBASE}.${METHOD}_predictions $OUTDIR/${DATABASE}_${PROBBASE}.${METHOD}_search
+
+                 
+        else
+                echo "There is no topobase or file $DATABASE...must stop" >&2
+                exit
+        fi
+
+	  wc $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_search >&2
+          echo "Sorting the results..." >&2
+          cat $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_search | grep -v ^MOLECULE | sort -k2 -n -r | \
+          head -$TOP > $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_sort
+	  wc $OUTDIR/${BASE}_${PROBBASE}.${METHOD}_sort >&2
+#
+	if [ "$SAVE" = "0" ]; then
+                rm -f $MIXTMP/${METHOD}_search_list_$$
+                rm -f $MIXTMP/${METHOD}_search_des_$$
+	fi
+
+
+#############################################################################################
+elif [ "$KEYWORD" = "cleanup" ] ; then
+        PROBNAME=$2
+ 	rm *${PROBNAME}*
+#############################################################################################
+else 
+  echo "$KEYWORD is not an allowed keyword" >&2
+  echo "$USAGE" >&2
+  exit
+fi
+#
+

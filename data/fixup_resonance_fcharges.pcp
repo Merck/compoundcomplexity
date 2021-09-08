@@ -1,0 +1,64 @@
+{-q -k}
+{
+	This script always assumes all the atoms are selected. 
+ 	Meant to assure resonance fcharges in non-dative nomenclature
+
+}
+
+
+{defining general atoms}
+!H,He,Ne,Ar,Kr,Xe,Rn	? g	; 
+
+{debug 2}
+
+ g=g ? sp2!sp3 sp2!sp3 ;
+ g=g=g ? * sp!sp2 * ;
+
+{sp3 ? blah3 ;}
+{sp2 ? blah2 ;}
+{sp ? blah1 ;}
+
+{debug 2}
+O,S&x1 ? OT ;
+g&x1 ? GT ;
+S&X4(~OT)~OT ? sulfone * * ;
+
+N&sp3&x4&fc0 ? fc1 $fcharge 1 ;
+N&sp2&x3&fc0 ? fc1 $fcharge 1 ;
+N&sp&x2&fc0  ? fc1 $fcharge 1 ;
+
+P&sp3&x4&fc0 ? fc1 $fcharge 1 ; 
+
+O&sp3&x3&fc0 ? fc1 $fcharge 1 ;
+O&sp2&x2&fc0 ? fc1 $fcharge 1 ;
+S&sp2&x2&fc0 ? fc1 $fcharge 1 ;
+S&sp3&x3&fc0 ? fc1 $fcharge 1 ; 
+S&sp3&x4&fc0 ? fc1 $fcharge 1 ; 
+
+N&fc1-OT&fc0 $fcharge 1 -1 ;
+S&fc1-OT&fc0 $fcharge 1 -1 ;
+P&fc1-OT&fc0 $fcharge 1 -1 ;
+
+N&fc1=N&x1&fc0 $fcharge 1 -1 ;
+N&fc1#C&x1&fc0 $fcharge 1 -1 ;
+
+
+N,O,S=C-N&X2-N&sp3&X4 $fcharge * * 0 1 ; {aminimide}
+
+S(~OT)(~OT)(~!OT)(-!OT) $bondtype 2 2 1 1 $fcharge 0 0 0 * * ;
+S(~OT)(~OT)(~OT)(-!OT)  $bondtype 2 2 1 1 $fcharge 0 0 0 0 0 ;
+OT=P&sp2&x4-OT              $bondtype 2 1 $fcharge 0 0 0 ;
+P(~OT)(~OT)(~OT)(-!OT)   $bondtype 2 1 1 1 $fcharge 0 0 0 0 0 ;
+S(=O)=O $fcharge 0 * *;
+S&sp3(-OT)(-N&X1,X2)(-!OT)(-!OT) $bondtype 2 2 1 1 $fcharge 0 0 0 * * ;
+
+N#N=C $bondtype 2 2 $fcharge -1 1 0 ;
+
+N-S,P&X4(~OT)(~OT) $fcharge 0 * * * ;
+
+Cl,Br,I&X2&sp3 $fcharge 1 ;
+
+{explicit nitro}
+N&X3(~OT)(~OT) $bondtype 1 2 $fcharge 1 -1 0 ; 
+
+;;

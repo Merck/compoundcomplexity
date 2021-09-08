@@ -1,0 +1,124 @@
+{-k -q}
+{the type 10 is used only when there is no assymetry to resolve which is the
+double and which the single bond}
+
+{defining general atoms}
+!H,He,Ne,Ar,Kr,Xe,Rn	? g	; 
+
+{debug 1}
+
+ g=g ? sp2!sp3 sp2!sp3 ;
+ g=g=g ? * sp!sp2 * ;
+ g-10-g ? sp2!sp3 sp2!sp3 ;
+ N,O,S&sp3-sp2,sp ? conj * ;
+  
+ sp2,sp-N,O,S&sp3-sp2,sp ? * twoconj * ;
+
+ sp2,sp,conj ? resonant ;
+
+O,S&X1 ? OT ;
+
+OT~C&X3~OT ? * cbx * ;
+
+C&sp2~OT ? cby * ;
+
+{section on dative bonds eliminated--that is done by fixup_resonance_fcharges.pcp}
+
+{imidazole/1,2,3-triazole}
+N&X2-g!cby=N&X2-C&X2=C&X3-@1 $bondtype 1 2 1 2 1; {new}
+N&X2=g!cby-N&X2-C&X2=C&X3-@1 $bondtype 1 2 1 2 1; {new}
+{1,2,4-triazole}
+{N&X2&sp3-N&X2=C&sp2!cby-N&X2=C&sp2-@1 $bondtype 1 1 2 1 2 ;}
+{N&X2-N&X2=C&sp2!cby-N&X2&sp3-C&sp2=@1 $bondtype 1 1 2 1 2 ;}
+{alternative 1,2,4 triazole using the most symmetrical convention --new2}
+N&X2&sp3-N&X2=C&sp2!cby-N&X2=C&sp2-@1 $bondtype 1 2 1 1 2 ;
+N&X2-N&X2=C&sp2!cby-N&X2&sp3-C&sp2=@1 $bondtype 1 2 1 1 2 ;
+
+
+{tetrazole}
+C=N&X2-N&X2=N&X2-N&X2-@1   $bondtype 2 1 2 1 1     ; {tetrazole}
+C=N&X2-N&X2-N&X2=N&X2-@1   $bondtype 2 1 2 1 1    ; {tetrazole }
+
+{guanidine}
+N-C(=N&X1)-N&X1 $bondtype 1 2 1 ;
+N=C(-N&X1)-N&X1 $bondtype 1 2 1 ;
+
+C&X3&sp2(-O&X1)=N&X2-resonant~resonant~resonant~@1  $bondtype 2 1 * "  ; {anion as in muscimol}
+C&X3&sp2(=O&X1)-N&X2-resonant~resonant~resonant~@1  $bondtype 2 1 * " ; {anion as in muscimol specific case}
+
+{specific case urea in 5-membered ring--New}
+C&X3&sp2(~O&X1)~N&X2~sp2!cby~sp2!cby~N&X2~@1  $bondtype 2 1 1 * 1 1 ; 
+{special case urea in a 5-membered ring where there is an acyclic double bond. Leave it alone--new}
+C&X3&sp2(=O&X1)-N&X2=g(-Acy1-g)-g(-Acy2-g)~N&X2~@1  $bondtype 2 1 2 1 1 2 1 1 ; 
+
+{pick up the triazole case--New}
+C&X3&sp2(~O&X1)~N&X2~N&X2~sp2!cby~N&X2~@1  $bondtype 2 1 1 2 1 1  ; 
+
+
+{six membered rings}
+C&X3&sp2(-O&X1)=N&X2-resonant~resonant~resonant~resonant~@1  $bondtype 2 1 * "  ; {simple amide}
+C&X3&sp2(-O&X1)-N&X2=resonant-resonant=resonant-resonant=@1  $bondtype 2 1 1 2 1 2 1  ; {push the bonds around NEW RULE}
+
+{C&X3&sp2(=O&X1)-N&X2-resonant~resonant~resonant~resonant~@1  $bondtype 2 1 * " ; }{anion as in muscimol specific case}
+
+{the case where there are two oxygens flanking a N in a six-membered ring cannot be resolved so leave the bonds aromatic}
+C&X3&sp2(-O&X1)-N&X2=C&X3&sp2(-O&X1)-C=sp2-C=@1 $bondtype 1 1 2 1 1 2 1 2 ;
+{force aromaticity if it is disambiguated}
+{C&X3&sp2(-O&X1)-N&X2-C&X3&sp2(=O&X1)-C=sp2-C=@1 $bondtype 1 1 2 1 1 2 1 2 ;} {currently turned off}
+
+
+{another symmetrical case that cannot be resolved--symmetrical amides in a six-membered ring}
+N-C=N-C(-O&X1)=sp2-C(-O&X1)=@1 $bondtype 1 2 1 1 2 1 1 2;
+{force aromaticity if it is disambiguated}
+{N-C=N-C(-O&X1)=sp2-C(=O&X1)-@1 $bondtype 1 2 1 1 2 1 1 2;}{currently turned off}
+
+{another symmetrical case that cannot be resolved--two nitrogens flanking a carbonyl in a six-membered ring}
+N&X2=C(-O&X1)-N&X2=resonant-resonant=resonant-@1 $bondtype 2 1 1 2 1 2 1;
+{force aromaticity if it is disambiguated}
+{N&X2-C(=O&X1)-N&X2=resonant-resonant=resonant-@1 $bondtype 2 1 1 2 1 2 1;}{currently turned off}
+
+{a symmetrical case that cannot have NH--amides at opposite sides of a six-membered ring in 2-fold symmetry}
+C&sp2(-O&X1)=N&X2-C&sp2=C&sp2(-O&X1)-N&X2=C&sp2-@1 $bondtype 1 2 1 2 1 1 2 1; {new}
+
+{a symmetrical case where amides are adjacent and carbonyls are close to each other--new}
+C&sp2(~O&X1)~C&sp2(~O&X1)~N&X2~resonant&sp2~resonant&sp2~N&X2~@1 $bondtype 2 1 2 1 1 2 1 1 ;
+{unless there are double bonds already--new}
+C&sp2(~O&X1)~C&sp2(~O&X1)~N&X2~resonant&sp2(=g)~resonant&sp2(=g)~N&X2~@1 $bondtype 2 1 2 1 1 * 1 * 1 1 ;
+
+{a symmetrical case where amides are adjacent and Ns are close to each other--new}
+C&sp2(~O&X1)~N&X2&resonant~N&X2&resonant~C&sp2(~O&X1)~resonant&sp2~resonant&sp2~@1 $bondtype 2 1 1 1 2 1 2 1 ;
+{unless there are double bonds alread--new}
+C&sp2(~O&X1)~N&X2&resonant~N&X2&resonant~C&sp2(~O&X1)~resonant&sp2(=g)~resonant&sp2(=g)~@1 $bondtype 2 1 1 1 2  1 * 1 * 1 ;
+
+C&X3&sp2(~O&X1)~N&X2&resonant~C&X3&sp2(~O&X1)~N&X2&resonant~resonant!cby~resonant!cby~@1 $bondtype 2 1 1 2 1 1 2 1; {tandem amides as in uracil--new}
+C&X3&sp2(~O&X1)~N&X2&resonant~C&X3&sp2(~O&X1)~N&X2&resonant~resonant!cby(=g)~resonant!cby(=g)~@1 $bondtype 2 1 1 2 1 1 * 1 * 1; {tandem amides as in uracil unless already has double bonds--new}
+C&X3&sp2(~O&X1)~N&X2&resonant~C&X3&sp2(~O&X1)~N&X2&resonant=resonant!cby(-N&sp3)~resonant!cby(=g)~@1 $bondtype 2 1 1 2 1 2 1 1 2 1; {flavin is a special case where you can make the second N a donor--new}
+C&X3&sp2(~O&X1)~N&X2&resonant~C&X3&sp2(~O&X1)~N&X2&resonant-resonant!cby(=g)~N&sp3&X3~@1 $bondtype 2 1 1 2 1 1 2 1 1 ; { N in the ring forces things--new}
+
+C&X3&sp2(~O&X1)~N&X2&resonant~C&X3&sp2(~O&X1)~N&X2&resonant=resonant!cby(-g)~C(=g)~@1 $bondtype 2 1 1 2 1 2 1 1 2 1 ; { a special case where a double single bond is forced--new}
+                                                                                  
+
+C&X3&sp2(-O&X1)-O-N&X2=sp2!cby~sp2=@1 $bondtype 1 1 1 2 1 2	; {anion as hydroxyisoxazole}{new}
+C&X3&sp2(=O&X1)-O-N&X2~sp2!cby=sp2~@1 $bondtype 1 1 1 2 1 2 ;                                {new}
+
+{Viktor Hornak's special case Jan 17, 2012}
+C(-N&X1,X2)=N-C(=O)-C~g-@1 $bondtype 2 1 1 2 1 * 1;
+C(=N&X1,X2)-N-C(=O)-C~g-@1 $bondtype 2 1 1 2 1 * 1;
+
+
+
+modes DELOCALIZED
+
+{symmetric imidazole/1,2,3-triazole}
+N&X2-g=N&X2-C&X3=C&X3-@1 $bondtype 10 10 1 2 1;
+N&X2=g-N&X2-C&X3=C&X3-@1 $bondtype 10 10 1 2 1;
+N&X2=g-N&X2-C&X2=C&X2-@1 $bondtype 10 10 1 2 1;
+
+{symmetric ketone alcohol}
+O&X1-C=C-C(=O)-twoconj,sp2 $bondtype 10 10 10 10 * ;
+O=C!cbx-C&X2-C!cbx=O $bondtype 10 10 10 10 ;
+
+
+
+
+;;

@@ -1,0 +1,152 @@
+{-q} {-k}
+{Default format charges : R. Sheridan Sept. 1994}
+
+
+{defining general atoms}
+{ note dummies must be allowed here as atoms, otherwise they might be added again}
+* ? g    ; 
+
+{hybridization definitions}
+g=g   ? sp2 sp2   ; 
+g-8-g ? sp2 sp2   ;
+g%g   ? sp2 sp2 ? ar ar  ;
+g-7-O,N,S-7-g  ? * sp3!sp2 *   ;
+g#g   ? sp1 sp1   ;
+g=g=g   ? * sp1!sp2 *   ;
+g!sp2,sp1   ? sp3    ;
+g-sp2,sp1   ? conj *   ;
+
+{debug 1}
+
+O,S&X1 ? OT ;
+
+{Conjugated N}
+N&sp3-P,S&X4(~OT)(~OT) ? Nconj * * * ;
+N&sp3-sp2,sp1 ? Nconj * ;
+N&sp3-7-sp2,sp1 ? Nconj * ;
+N&sp3(-sp2,sp1)-sp2,sp1 ? Ndconj * * ;
+N&sp3(-7-sp2,sp1)-7-sp2,sp1 ? Ndconj * * ;
+N&sp3!Nconj ? Nsat ;
+
+{resonant atom definition}
+N,O,S&conj	? res		;
+sp1,sp2         ? res           ;
+
+{aromatic ring definitions}
+res~res~res~res~res~res~@1	? ar6 ar6 ar6 ar6 ar6 ar6	;
+res~res~res~res~res~@1		? ar5 ar5 ar5 ar5 ar5		;
+
+{any flat ring}
+ar5,ar6			? ar		;
+
+C,P,S,N=O,S ? withdraw * ;
+C#N ? withdraw * ;
+P,S(-O,S&X1)-O,S&X1 ? withdraw * *;
+N-withdraw ? Namide * ;
+withdraw-N-withdraw ? * Ndamide * ;
+C&sp2~withdraw           ? camide * ;
+ar~sp2(~ar)~sp2(~ar)~ar ? * fused * fused * *;
+
+{turn off any atom with nonzero fcharge}
+{fc1,fc2,fc3,fcm1,fcm2,fcm3 ? ! ;}
+
+{quaternary nitrogen, P, As and eXceptions}
+N,P,As&X4&sp3        ? quat  $fcharge 1    ; {quaternary}
+N,P,As&X4&sp3-O,S&X1   $fcharge 1 -1 ; {turns off quarternary N-oxides,sufides}
+N,P,As&X3,X4=O,S       $fcharge 0  0 ; {alternative P-oxide,sulfide}
+
+{sp3 amines and eXceptions}
+Nsat&X1,X2,X3    $fcharge 1     ;  {any nonconjugated sp3 N is a basic amine}
+Nsat~Nconj       $fcharge 0 *   ;  {except neXt to a conjugated N}
+{N termini}
+N&X1&Nsat-C-C(=O)     $fcharge -2 * * * ; {N termini are not to be added to}
+N&X2&Nsat-C(-C-C-C-@1)-C(=O)     $fcharge -2 * * * * * * ; {N termini are not to be added to}
+
+{these are special cases where conjugated sp3 N's are basic}
+C!camide(=N!ar,Namide,quat)-N&sp3!Ndconj,quat         $fcharge 0 1 0 ; {amidines}
+{turn off amidine/guanidines if one of the N's is in an amide}
+N!ar,Namide=C-Namide,Ndamide  $fcharge 0 * * ;
+
+{4-aminopyridine}
+N&sp3!ar,Namide,Ndconj-C&sp2~C&sp2~C&sp2~N&sp2&X2~C&sp2~C&sp2~@2 $fcharge 0 0 0 0 1 0 0 ;
+
+{2-aminoimidazole}
+N&X2&sp3-C(-N&sp3!ar,Namide)=N&X2-C!fused,camide=C!fused,camide-@1 $fcharge 0 * 0 1 * *;
+
+{trisubstituted sp2 amines are cations with eXceptions}
+N,P,As&X3&sp2          $fcharge 1        ; {trisubstituted aromatic amine}
+N,P,As&X3&sp2-O,S&X1   $fcharge 1 -1     ; {turns off tertiary in nitro and N-oXides}  
+N&X3(=O)=O          $fcharge 2 -1 -1  ; {turns off tertiary N in alternative nitro}
+
+{di substituted sp1 amines and exceptions}
+N&X2&sp1       $fcharge  1    ;  {diazonium}
+
+{trisubstituted oXygens,sulfurs and eXceptions}
+O,S&X3&sp3           $fcharge 1  ;  {trisubstituted}
+O,S&X2&sp2           $fcharge 1  ;  {trivalent}
+S&X3,X4&sp3-O,S&X1   $fcharge 1 -1 ; {turns off sulfoXides} 
+S&X3,X4&sp2,sp1=O,S  $fcharge 0  0 ; {sulfoXides and sulfones}
+
+{miscellaneous anions}
+S&X1-ar6 $fcharge -1 *		;
+C,As,P,S(=O,S)-O,S&X1   $fcharge 0 0 -1   ; {carboXylates and S equivalent}
+C&X3&sp2(-O&X1)=N&X2-O~g=g~@1  $fcharge 0 -1 0 0 0 0  ; {anion as in muscimol}
+C&X3&sp2(=O&X1)-N&X2-O~g=g~@1  $fcharge 0  0 -1 0 0 0  ; {anion as in muscimol specific case}
+C&X3&sp2(-O&X1)-O-N&X2=g-g=@1 $fcharge 0 -1 0 0 * *  ; {anion as hydroXyisoXazole}
+C&X3&sp2(=O&X1)-O-N&X2-g=g~@1 $fcharge 0 0 0 -1 * *  ; {anion as hydroXyisoXazole specific case}
+C=N&X2-N&X2=N&X2-N&X2-@1 $fcharge 0  0 0 0 -1  ; {tetrazole}
+C=N&X2-N&X2-N&X2=N&X2-@1 $fcharge 0  0 -1 0  0  ; {tetrazole tautomer}
+sp2,sp-S(~OT)(~OT)-N&X2-sp2,sp $fcharge * 0 0 0 -1 * ; {double conjugated sulfonamides}
+
+S,N,O=C-N&X2-N&sp3&X4 $fcharge * * -1 +1 ; {ainimide}
+
+{nitros, etc.}
+N(=OT)=OT $bondtype 2 1 $fcharge 1 0 -1 ;
+N(=OT)~OT $fcharge 1 0 -1 ;
+S(=OT)(=OT) $fcharge 0 0 0 ;
+S(-OT)-OT $bondtype 2 2 $fcharge 0 0 0 ;
+OT~S(~OT)(~OT)~OT $bondtype 1 2 2 1 $fcharge 0 0 0 0 0 ;
+S(-OT)(-OT)-OT $bondtype 2 2 1 $fcharge 0 0 0 -1 ;
+P(-OT)(-OT)-OT $bondtype 2 1 1 $fcharge 0 0 -1 -1 ;
+P(-OT)(-OT)(-!X1)-!X1  $bondtype 2 1 * * $fcharge 0 0 -1 * * ;
+{for SO4 and PO4}
+OT~S(~OT)(~OT)~OT $bondtype 1 2 2 1 $fcharge -1 0 0 0 -1 ;
+OT~P(~OT)(~OT)~OT $bondtype 1 2 1 1 $fcharge -1 0 0 -1 -1 ;
+
+{Anions suggested by Qiaolin Deng}
+{A}
+O&X1-C=C-C(=O)-C~C~C-@2 $fcharge -1 * " ;
+O&X1-C=C-C(=O)-C~C-@2 $fcharge -1 * " ;
+{B}
+O&X1-C=N-N(-g)-C(=O)-C-C-@2 $fcharge -1 * " ;
+{C}
+O&X1-C=C-C(=O)-C-C(=O)-@2 $fcharge -1 * " ;
+{E}
+O&X1-C=C-C(=O)-N-C(=O)-@2 $fcharge -1 * " ;
+{D}
+O&X1-C=C-C(=O)-O-C-@2 $fcharge -1 * " ;
+{H}
+O&X1-C-N(-g)-C(=O)-C=C-C=@2 $fcharge -1 * " ;
+
+
+{from Alejandro Crespo}
+O,S-C(=O)-N&X2-C(=O)-g-@1  $fcharge * * * -1 * * * ;
+
+{metals}
+Co,Cu,Mg,Be,Mn,Fe,Ca,Zn $fcharge 2 ;
+Li,Na,K,Rb $fcharge 1;
+
+{monatomic species}
+F,Cl,Br,I&X0 $fcharge -1 ;
+
+{special case}
+N,O,S=C-N&X2-N&sp3&X4 $fcharge * * -1 1 ; {aminimide}
+N&sp3&X4-N-withdraw $fcharge 1 -1 * ;
+
+{azide}
+N&X1=N&X2=N&X2 $fcharge -1 1 0 ;
+
+{N with 3 bonds coordinated to metal}
+N&X3&sp2-Co,Cu,Mg,Be,Mn,Fe,Ca,Zn $fcharge 0 * ;
+
+;;
