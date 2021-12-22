@@ -47,7 +47,7 @@ HELPMSG="USAGE: $0 [ -sdf <sdfile> | -smi <smilefile> ]"
 while [ ! -z "$1" ]; do
     case $1 in
         -sdf)
-            CONVERTER="$BIN/fromsd $2"
+            CONVERTER="$BIN/fromsd -u $2"
 	    shift
 	    ;;
         -smi)
