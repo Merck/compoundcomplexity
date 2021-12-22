@@ -37,6 +37,8 @@ export MIXDAT=$DATA
 export MIXSCLIB=$BIN/lib
 export MIXTMP=$TEMPDIR
 
+export STMP=$MIXTMP
+
 export PATH=$BIN:$PATH
 export LD_LIBRARY_PATH=${LDLIB}:${LD_LIBRARY_PATH}
 
