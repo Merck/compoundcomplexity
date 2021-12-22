@@ -70,6 +70,8 @@ if [ ! -d "$MOE" ]; then
     exit 3
 fi
 
+mkdir -p $TEMPDIR
+
 data_filter="egrep -e '^MOLECULE ' -e '^End_Of_Molecule' -e '^DATA'"
 TEMP_FFD=$TEMPDIR/temp.$USER.ffd.$USER.$$
 CHARGESTATE="PH74"
